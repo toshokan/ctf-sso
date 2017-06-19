@@ -72,16 +72,21 @@ post '/login' do
 	wikiJar = wikiAuth($wikiUri, params[:user], params[:pass])
 	gitblitJar = gitblitAuth($gitblitUri, params[:user], params[:pass], QUri: $gitblitQUri)
 	tepidJson = tepidAuth($tepidUri, params[:user], params[:pass])
-	tepidUserId = JSON.parse(tepidJson)['_id']
-	
-	wikiJar.each do |cookie|
-			response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca' )
-	end
-	gitblitJar.each do |cookie|
-			response.set_cookie(cookie.name, value: cookie.value, domain: '.mcgill.ca' )
-	end
 
-	rstr = HTTP::Cookie.cookie_value(wikiJar.cookies($wikiUri))
-	erb :login, locals: {user: params[:user], tepidJson: tepidJson, tepidUserId: tepidUserId}
+	if wikiJar == nil || gitblitJar == nil || tepidJson == nil
+		erb :failure
+	else
+		tepidUserId = JSON.parse(tepidJson)['_id']
+		
+		wikiJar.each do |cookie|
+				response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca' )
+		end
+		gitblitJar.each do |cookie|
+				response.set_cookie(cookie.name, value: cookie.value, domain: '.mcgill.ca' )
+		end
+
+		rstr = HTTP::Cookie.cookie_value(wikiJar.cookies($wikiUri))
+		erb :login, locals: {user: params[:user], tepidJson: tepidJson, tepidUserId: tepidUserId}
+	end
 end
 
