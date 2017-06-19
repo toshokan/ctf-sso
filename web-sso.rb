@@ -144,7 +144,8 @@ get '/logout' do
 	cookies = HTTP::Cookie.cookie_value_to_hash(cookieStr)
 	# Delete each cookie by setting it to expire at unix epoch
 	cookies.each do |name, value|
-		response.set_cookie(name, value: value, expires: Time.new(1970))
+		response.set_cookie(name, value: value, expires: Time.new(1970), domain: '.science.mcgill.ca')
+		response.set_cookie(name, value: value, expires: Time.new(1970), domain: 'git.sus.mcgill.ca', path: '/gitblit/')
 	end
 	erb :logout
 	
