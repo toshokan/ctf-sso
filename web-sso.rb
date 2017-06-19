@@ -118,11 +118,11 @@ post '/sso/login' do
 		
 		# Forward all cookies to the user's web browser
 		wikiJar.each do |cookie|
-			response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca' )
+			response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca', path: '/' )
 			#response.set_cookie(cookie.name, value: cookie.value )
 		end
 		gitblitJar.each do |cookie|
-			response.set_cookie(cookie.name, value: cookie.value, domain: '.mcgill.ca' )
+			response.set_cookie(cookie.name, value: cookie.value, domain: '.mcgill.ca', path: '/' )
 			#response.set_cookie(cookie.name, value: cookie.value )
 		end
 		
