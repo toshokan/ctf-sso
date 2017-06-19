@@ -4,10 +4,12 @@
 		<title> Logout </title>
 	</head>
 	<body>
-		<p> You have been logged out. Click <a href="/">here</a> to go back home. </p>
+		<p> You have been logged out. Click <a href="/sso">here</a> to go back home. </p>
 		<script>
 			localStorage.removeItem("session")
+			sessionStorage.removeItem("session")
 			localStorage.removeItem("sessionToken")
+			sessionStorage.removeItem("sessionToken")
 		</script>
 	</body>
 </html>

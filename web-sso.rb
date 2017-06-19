@@ -92,12 +92,12 @@ end
 
 # Sinatra routes
 
-get '/' do
+get '/sso/?' do
 	# Show main page
 	erb :index
 end
 
-post '/login' do
+post '/sso/login' do
 	# Handle login
 	
 	# Halt on bad data
@@ -118,12 +118,12 @@ post '/login' do
 		
 		# Forward all cookies to the user's web browser
 		wikiJar.each do |cookie|
-			#response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca' )
-			response.set_cookie(cookie.name, value: cookie.value )
+			response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca' )
+			#response.set_cookie(cookie.name, value: cookie.value )
 		end
 		gitblitJar.each do |cookie|
-			#response.set_cookie(cookie.name, value: cookie.value, domain: '.mcgill.ca' )
-			response.set_cookie(cookie.name, value: cookie.value )
+			response.set_cookie(cookie.name, value: cookie.value, domain: '.mcgill.ca' )
+			#response.set_cookie(cookie.name, value: cookie.value )
 		end
 		
 		# Render the user page if user has logged in. This page saves TEPID session information to local storage
@@ -131,7 +131,7 @@ post '/login' do
 	end
 end
 
-get '/logout' do
+get '/sso/logout' do
 	# Handle logout
 
 	# Halt on bad data
@@ -144,13 +144,13 @@ get '/logout' do
 	cookies = HTTP::Cookie.cookie_value_to_hash(cookieStr)
 	# Delete each cookie by setting it to expire at unix epoch
 	cookies.each do |name, value|
-		response.set_cookie(name, value: value, expires: Time.new(1970), domain: '.science.mcgill.ca')
-		response.set_cookie(name, value: value, expires: Time.new(1970), domain: 'git.sus.mcgill.ca', path: '/gitblit/')
+		response.set_cookie(name, value: value, expires: Time.new(1970), domain: '.science.mcgill.ca', path: '/')
+		response.set_cookie(name, value: value, expires: Time.new(1970), domain: '.mcgill.ca', path: '/')
 	end
 	erb :logout
 	
 end
 
-get '/*' do
+get '*' do
 	halt 418, '急須です'
 end
