@@ -1,7 +1,7 @@
 # ctf-sso
 ### A new single-sign on for CTF
 
-ctf-sso is a crude single sign-on system that automates logging into CTF web services.
+ctf-sso is a basic single sign-on system that automates logging into CTF web services.
 
 It is written in Ruby and uses Sinatra.
 
