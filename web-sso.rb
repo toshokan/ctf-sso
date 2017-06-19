@@ -4,9 +4,12 @@ require 'nokogiri'
 require 'json'
 require 'sinatra'
 
+# Sinatra / Puma config
+set :server, :puma
+set :environment, :production
+
 # Store uris
 $wikiUri = URI("https://tepid.science.mcgill.ca/wiki/index.php/Special:UserLogin")
-$wikiTUri = URI("https://tepid.science.mcgill.ca/wiki/api.php?action=query&format=json&meta=tokens&type=login")
 $tepidUri = URI("http://tepid.science.mcgill.ca/tepid/sessions/")
 $gitblitUri = URI("http://git.sus.mcgill.ca:8080/gitblit/")
 $gitblitQUri = URI("http://git.sus.mcgill.ca:8080/gitblit/?wicket:interface=:1:userPanel:loginForm::IFormSubmitListener::")
@@ -147,3 +150,6 @@ get '/logout' do
 	
 end
 
+get '/*' do
+	halt 418, '急須です'
+end
