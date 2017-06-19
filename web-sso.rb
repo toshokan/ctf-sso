@@ -13,6 +13,8 @@ $wikiUri = URI("https://tepid.science.mcgill.ca/wiki/index.php/Special:UserLogin
 $tepidUri = URI("http://tepid.science.mcgill.ca/tepid/sessions/")
 $gitblitUri = URI("http://git.sus.mcgill.ca:8080/gitblit/")
 $gitblitQUri = URI("http://git.sus.mcgill.ca:8080/gitblit/?wicket:interface=:1:userPanel:loginForm::IFormSubmitListener::")
+$gitlabUri = URI("https://gitlab.science.mcgill.ca/users/sign_in")
+$gitlabPUri = URI("https://gitlab.science.mcgill.ca/users/auth/ldapmain/callback")
 
 
 def wikiAuth(uri, user, pass, params=nil)
@@ -90,6 +92,29 @@ def gitblitAuth(uri, user, pass, params = nil)
 	return cookieJar
 end
 
+def gitlabAuth(uri, user, pass, params=nil)
+	cookieJar = HTTP::CookieJar.new
+	res = Net::HTTP.get_response(uri)
+	res.get_fields('Set-Cookie').each do |value|
+		cookieJar.parse(value, uri)
+	end
+	
+	page = Nokogiri::HTML(res.body)
+	authenticityToken = page.at('meta[name="csrf-token"]')['content']
+
+	Net::HTTP.start(params[:PUri].host, params[:PUri].port, use_ssl: true) do |http|
+		req = Net::HTTP::Post.new params[:PUri]
+		req.form_data = {utf8: '✓', authenticity_token: authenticityToken, username: user, password: pass}
+		req['Cookie'] = HTTP::Cookie.cookie_value(cookieJar.cookies(uri))
+		res = http.request req
+		return nil if !res.get_fields('Set-Cookie')
+		res.get_fields('Set-Cookie').each do |value|
+			cookieJar.parse(value, uri)
+		end
+	end
+	return cookieJar
+end
+
 # Sinatra routes
 
 get '/sso/?' do
@@ -107,10 +132,11 @@ post '/sso/login' do
 	# Authenticate with each service
 	wikiJar = wikiAuth($wikiUri, params[:user], params[:pass], TUri: $wikiTUri)
 	gitblitJar = gitblitAuth($gitblitUri, params[:user], params[:pass], QUri: $gitblitQUri)
+	gitlabJar = gitlabAuth($gitlabUri, params[:user], params[:pass], PUri: $gitlabPUri)
 	tepidJson = tepidAuth($tepidUri, params[:user], params[:pass])
 	
 	# Render failure page if any authentication did not succeed
-	if wikiJar == nil || gitblitJar == nil || tepidJson == nil
+	if wikiJar == nil || gitblitJar == nil || gitlabJar == nil || tepidJson == nil
 		erb :failure
 	else
 		# Otherwise parse TEPID response for a session ID
@@ -120,6 +146,9 @@ post '/sso/login' do
 		wikiJar.each do |cookie|
 			response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca', path: '/' )
 			#response.set_cookie(cookie.name, value: cookie.value )
+		end
+		gitlabJar.each do |cookie|
+			response.set_cookie(cookie.name, value: cookie.value, domain: '.science.mcgill.ca', path: '/' )
 		end
 		gitblitJar.each do |cookie|
 			response.set_cookie(cookie.name, value: cookie.value, domain: '.mcgill.ca', path: '/' )
