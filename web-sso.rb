@@ -50,7 +50,6 @@ end
 
 def tepidAuth(uri, user, pass)
 	# Authenticate with TEPID
-	
 	resJson = nil
 	# POST credentials JSON to TEPID Tomcat, simulating client-side js auth
 	Net::HTTP.start(uri.host, 8443, use_ssl: true) do |http|
@@ -93,21 +92,29 @@ def gitblitAuth(uri, user, pass, params = nil)
 end
 
 def gitlabAuth(uri, user, pass, params=nil)
+	# Authenticate with Gitlab
+	# Note that this requires specifying the domain for each cookie in Gitlab configuration
+	# Hold cookies
 	cookieJar = HTTP::CookieJar.new
 	res = Net::HTTP.get_response(uri)
+	# Get a session cookie from Gitlab
 	res.get_fields('Set-Cookie').each do |value|
 		cookieJar.parse(value, uri)
 	end
-	
+
+	# Parse HTML for authenticity token embedded in login form
 	page = Nokogiri::HTML(res.body)
 	authenticityToken = page.at('meta[name="csrf-token"]')['content']
-
+	# POST data to login page, simulating a user interaction 
 	Net::HTTP.start(params[:PUri].host, params[:PUri].port, use_ssl: true) do |http|
 		req = Net::HTTP::Post.new params[:PUri]
 		req.form_data = {utf8: '✓', authenticity_token: authenticityToken, username: user, password: pass}
+		# Send session cookie back to Gitlab
 		req['Cookie'] = HTTP::Cookie.cookie_value(cookieJar.cookies(uri))
 		res = http.request req
+		# Signal failure if we didn't get a new cookie back
 		return nil if !res.get_fields('Set-Cookie')
+		# Store cookies to forward to user
 		res.get_fields('Set-Cookie').each do |value|
 			cookieJar.parse(value, uri)
 		end
@@ -129,11 +136,15 @@ post '/sso/login' do
 	if params.nil? || params[:user] == "" || params[:pass] == ""
 		halt 418, '急須です'
 	end
-	# Authenticate with each service
-	wikiJar = wikiAuth($wikiUri, params[:user], params[:pass], TUri: $wikiTUri)
-	gitblitJar = gitblitAuth($gitblitUri, params[:user], params[:pass], QUri: $gitblitQUri)
-	gitlabJar = gitlabAuth($gitlabUri, params[:user], params[:pass], PUri: $gitlabPUri)
-	tepidJson = tepidAuth($tepidUri, params[:user], params[:pass])
+	# Authenticate with each service (in their own threads)
+	wikiJar = gitblitJar = gitlabJar = tepidJson = nil
+	threads = []
+	threads << Thread.new { wikiJar = wikiAuth($wikiUri, params[:user], params[:pass], TUri: $wikiTUri) }
+	threads << Thread.new { gitblitJar = gitblitAuth($gitblitUri, params[:user], params[:pass], QUri: $gitblitQUri) }
+	threads << Thread.new { gitlabJar = gitlabAuth($gitlabUri, params[:user], params[:pass], PUri: $gitlabPUri) }
+	threads << Thread.new { tepidJson = tepidAuth($tepidUri, params[:user], params[:pass]) }
+
+	threads.map(&:join)
 	
 	# Render failure page if any authentication did not succeed
 	if wikiJar == nil || gitblitJar == nil || gitlabJar == nil || tepidJson == nil
