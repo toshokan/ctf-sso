@@ -29,7 +29,7 @@ def wikiAuth(uri, user, pass, params=nil)
 	
 	# Parse HTML to find login token embedded in login form
 	page = Nokogiri::HTML(res.body)
-	loginToken = page.css('input[name=wpLoginToken]').first['value']
+	loginToken = page.at('input[name=wpLoginToken]')['value']
 
 	# POST data to login page, simulating a user interaction
 	Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
